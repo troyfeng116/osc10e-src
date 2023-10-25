@@ -1,13 +1,7 @@
 /**
- * hello.c
+ * jiffies-lmk.c
  *
  * Kernel module that communicates with /proc file system.
- *
- * The makefile must be modified to compile this program.
- * Change the line "simple.o" to "hello.o"
- *
- * Operating System Concepts - 10th Edition
- * Copyright John Wiley & Sons - 2018
  */
 
 #include <linux/init.h>
@@ -16,10 +10,11 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 
+#include <linux/jiffies.h>
+
 #define BUFFER_SIZE 128
 
-#define PROC_NAME "hello"
-#define MESSAGE "Hello World\n"
+#define PROC_NAME "jiffies"
 
 /**
  * Function prototypes
@@ -35,7 +30,7 @@ static struct file_operations proc_ops = {
 int proc_init(void)
 {
 
-    // creates the /proc/hello entry
+    // creates the /proc/jiffies entry
     // the following function call is a wrapper for
     // proc_create_data() passing NULL as the last argument
     proc_create(PROC_NAME, 0, NULL, &proc_ops);
@@ -49,14 +44,14 @@ int proc_init(void)
 void proc_exit(void)
 {
 
-    // removes the /proc/hello entry
+    // removes the /proc/jiffies entry
     remove_proc_entry(PROC_NAME, NULL);
 
     printk(KERN_INFO "/proc/%s removed\n", PROC_NAME);
 }
 
 /**
- * This function is called each time the /proc/hello is read.
+ * This function is called each time the /proc/jiffies is read.
  *
  * This function is called repeatedly until it returns 0, so
  * there must be logic that ensures it ultimately returns 0
@@ -84,7 +79,7 @@ ssize_t proc_read(struct file *file, char __user *usr_buf, size_t count, loff_t 
 
     completed = 1;
 
-    rv = sprintf(buffer, MESSAGE);
+    rv = sprintf(buffer, "%lu\n", jiffies);
 
     // copies the contents of buffer to userspace usr_buf
     copy_to_user(usr_buf, buffer, rv);
@@ -97,5 +92,5 @@ module_init(proc_init);
 module_exit(proc_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Hello Module");
+MODULE_DESCRIPTION("Jiffies Module");
 MODULE_AUTHOR("SGG");

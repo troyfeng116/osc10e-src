@@ -4,5 +4,8 @@ CFLAGS=-I. -lrt
 time_shmem: time_shmem.c
 	$(CC) -o time_shmem time_shmem.c $(CFLAGS)
 
+time_pipe: time_pipe.c
+	$(CC) -o time_pipe time_pipe.c $(CFLAGS)
+
 clean:
-	rm time_shmem
+	rm time_shmem time_pipe

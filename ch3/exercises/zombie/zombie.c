@@ -4,32 +4,32 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#define DIE(msg)            \
+    {                       \
+        perror(msg);        \
+        exit(EXIT_FAILURE); \
+    }
+
 int main()
 {
     pid_t pid, ppid, wpid;
     int status;
 
-    ppid = getpid();
-    if (ppid == -1)
+    if ((ppid = getpid()) == -1)
     {
-        perror("getpid error");
-        exit(EXIT_FAILURE);
+        DIE("getpid error");
     }
 
-    pid = fork();
-    if (pid == -1)
+    if ((pid = fork()) == -1)
     {
-        perror("fork error");
-        exit(EXIT_FAILURE);
+        DIE("fork error");
     }
 
     if (pid == 0)
     {
-        pid = getpid();
-        if (pid == -1)
+        if ((pid = getpid()) == -1)
         {
-            perror("[zombie] getpid error");
-            exit(EXIT_FAILURE);
+            DIE("[zombie] getpid error");
         }
 
         printf("i am zombie [%d]\n", pid);
@@ -40,13 +40,12 @@ int main()
         printf("parent [%d] delaying wait for zombie [%d]...\n", ppid, pid);
         sleep(10);
         printf("parent [%d] waiting to collect zombie [%d]...\n", ppid, pid);
-        wpid = waitpid(pid, &status, 0);
-        if (wpid == -1)
+        if ((wpid = waitpid(pid, &status, 0)) == -1)
         {
-            perror("waitpid error");
-            exit(EXIT_FAILURE);
+            DIE("waitpid error");
         }
-        printf("parent [%d] waited on [%d] with status %d\n", pid, wpid, status);
+
+        printf("parent [%d] waited on [%d] with status %d\n", ppid, wpid, status);
     }
 
     return 0;

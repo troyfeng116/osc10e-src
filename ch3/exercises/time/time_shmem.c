@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 
 #define DIE(msg)            \
     {                       \
@@ -16,16 +17,13 @@
 
 int main(int argc, char **argv)
 {
-    const int SIZE = 4096;
+    const int SIZE = sizeof(struct timeval);
     const char *name = "time_shmem";
 
     int shared_fd;
     char *null_term_argv[argc];
-    char *mapped_ptr;
-    struct timeval current;
+    struct timeval *mapped_timeval_ptr;
     pid_t pid;
-    int wait_status;
-    long start_time, end_time;
 
     shared_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     if (shared_fd == -1)
@@ -33,13 +31,13 @@ int main(int argc, char **argv)
         DIE("shm_open failed");
     }
 
-    if (ftruncate(shared_fd, SIZE) < 0)
+    if (ftruncate(shared_fd, SIZE) == -1)
     {
         DIE("ftruncate failed");
     }
 
-    mapped_ptr = (char *)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shared_fd, 0);
-    if (mapped_ptr == (void *)-1)
+    mapped_timeval_ptr = (struct timeval *)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shared_fd, 0);
+    if (mapped_timeval_ptr == (void *)-1)
     {
         DIE("mmap failed");
     }
@@ -51,37 +49,40 @@ int main(int argc, char **argv)
     null_term_argv[argc - 1] = NULL;
 
     pid = fork();
-    if (pid < 0)
+    if (pid == -1)
     {
         DIE("fork failed");
     }
 
     if (pid == 0)
     {
-        if (gettimeofday(&current, NULL) < 0)
+        if (gettimeofday(mapped_timeval_ptr, NULL) == -1)
         {
             DIE("gettimeofday failed");
         }
 
-        sprintf(mapped_ptr, "%ld", current.tv_usec);
         execvp(null_term_argv[0], null_term_argv);
 
         DIE("execvp failed");
     }
     else
     {
-        if (waitpid(pid, &wait_status, 0) < 0)
+        int wait_status;
+        struct timeval current_timeval;
+        long start_time, end_time;
+
+        if (waitpid(pid, &wait_status, 0) == -1)
         {
             DIE("waitpid failed");
         }
 
-        if (gettimeofday(&current, NULL) < 0)
+        if (gettimeofday(&current_timeval, NULL) == -1)
         {
             DIE("gettimeofday failed");
         }
 
-        start_time = atol(mapped_ptr);
-        end_time = current.tv_usec;
+        start_time = mapped_timeval_ptr->tv_usec;
+        end_time = current_timeval.tv_usec;
         printf("Elapsed time: %fs\n", (end_time - start_time) / 1e6);
 
         close(shared_fd);

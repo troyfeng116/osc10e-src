@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#include "common.h"
+
 #define DIE(msg)            \
     {                       \
         perror(msg);        \

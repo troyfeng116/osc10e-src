@@ -1,0 +1,5 @@
+PROJ_ROOT=$(HOME)/final-src-osc10e
+COMMON_H=$(PROJ_ROOT)/common.h
+
+CC=gcc
+CFLAGS=-g -Wall -pedantic -I. -I$(PROJ_ROOT) -lrt -lm

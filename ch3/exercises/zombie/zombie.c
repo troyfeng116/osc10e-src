@@ -4,11 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#define DIE(msg)            \
-    {                       \
-        perror(msg);        \
-        exit(EXIT_FAILURE); \
-    }
+#include "common.h"
 
 int main()
 {

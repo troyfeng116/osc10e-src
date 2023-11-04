@@ -22,6 +22,12 @@ int main(int argc, char **argv)
     struct timeval current_timeval;
     pid_t pid;
 
+    if (argc < 2)
+    {
+        printf("usage: time_pipe <cmd> <...cmd_args>\n");
+        exit(1);
+    }
+
     if ((pipe(pipe_fds)) == -1)
     {
         DIE("pipe failed");

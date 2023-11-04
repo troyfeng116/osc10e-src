@@ -21,6 +21,12 @@ int main(int argc, char **argv)
     struct timeval *mapped_timeval_ptr;
     pid_t pid;
 
+    if (argc < 2)
+    {
+        printf("usage: time_pipe <cmd> <...cmd_args>\n");
+        exit(1);
+    }
+
     shared_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     if (shared_fd == -1)
     {

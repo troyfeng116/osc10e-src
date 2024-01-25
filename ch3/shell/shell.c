@@ -15,6 +15,8 @@
 
 #define MAX_LINE 80 /* 80 chars per line, per command */
 
+#define EXIT_CMD "q"
+
 #define HISTORY_CMD "!!"
 #define HISTORY_ERR_MSG "No commands in history."
 
@@ -27,8 +29,20 @@ void print_args(char *args[], int n_args)
     printf("%s\n", args[n_args - 1]);
 }
 
+void destroy_args(char *args[], int max_args)
+{
+    for (int i = 0; i < max_args; i++)
+    {
+        if (args[i] != NULL)
+        {
+            free(args[i]);
+        }
+    }
+}
+
 /**
  * Read command from line of stdin; populate `args` array; return list of args, with terminating NULL.
+ * Arg strings are heap-allocated and must be freed.
  */
 int read_args_from_stdin(char *args[], int max_args)
 {
@@ -133,6 +147,12 @@ int main(void)
     int prev_n_args;
     char *prev_args[max_args];
 
+    for (int i = 0; i < max_args; i++)
+    {
+        args[i] = NULL;
+        prev_args[i] = NULL;
+    }
+
     while (should_run)
     {
         printf("osh>");
@@ -143,6 +163,12 @@ int main(void)
         if (n_args == 0)
         {
             continue;
+        }
+
+        // handle exit command
+        if (n_args == 1 && strcmp(args[0], EXIT_CMD) == 0)
+        {
+            break;
         }
 
         // handle history command
@@ -157,6 +183,7 @@ int main(void)
                 print_args(prev_args, prev_n_args);
                 handle_args(prev_args, prev_n_args, &n_run);
             }
+            destroy_args(args, max_args);
             continue;
         }
 
@@ -170,12 +197,16 @@ int main(void)
         handle_args(args, n_args, &n_run);
 
         // store prev args
+        destroy_args(prev_args, max_args);
         prev_n_args = n_args;
         for (int i = 0; i < max_args; i++)
         {
             prev_args[i] = args[i];
         }
     }
+
+    destroy_args(args, max_args);
+    destroy_args(prev_args, max_args);
 
     return 0;
 }

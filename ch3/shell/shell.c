@@ -15,8 +15,20 @@
 
 #define MAX_LINE 80 /* 80 chars per line, per command */
 
+#define HISTORY_CMD "!!"
+#define HISTORY_ERR_MSG "No commands in history."
+
+void print_args(char *args[], int n_args)
+{
+    for (int i = 0; i < n_args - 1; i++)
+    {
+        printf("%s ", args[i]);
+    }
+    printf("%s\n", args[n_args - 1]);
+}
+
 /**
- * Read command from line of stdin; populate `args` array; return list of args.
+ * Read command from line of stdin; populate `args` array; return list of args, with terminating NULL.
  */
 int read_args_from_stdin(char *args[], int max_args)
 {
@@ -56,15 +68,14 @@ int read_args_from_stdin(char *args[], int max_args)
         }
     }
 
-    for (int i = args_idx; i < max_args; i++)
-    {
-        args[i] = NULL;
-    }
+    // null-terminate args
+    args[args_idx] = NULL;
     return args_idx;
 }
 
 /**
- * Fork child process,
+ * Fork child process, execute `args` with `execvp`.
+ * Parent process waits unless backgrounded.
  */
 void fork_and_execute(char *args[], int n_args)
 {
@@ -80,14 +91,16 @@ void fork_and_execute(char *args[], int n_args)
     }
 
     is_backgrounded = strcmp(args[n_args - 1], "&") == 0;
-    if (is_backgrounded)
-    {
-        args[n_args - 1] = NULL;
-    }
 
     if (pid == 0)
     {
+        // if backgrounded, remove background arg in child process before exec
+        if (is_backgrounded)
+        {
+            args[n_args - 1] = NULL;
+        }
         execvp(args[0], args);
+        printf("command %s failed with status code %d\n", args[0], errno);
         exit(errno);
     }
     else
@@ -95,9 +108,18 @@ void fork_and_execute(char *args[], int n_args)
         // wait for child to join if not backgrounded
         if (!is_backgrounded)
         {
-            waitpid(0, &status, 0);
+            if (waitpid(0, &status, 0) == -1)
+            {
+                DIE("waidpid failed");
+            }
         }
     }
+}
+
+void handle_args(char *args[], int n_args, int *n_run)
+{
+    fork_and_execute(args, n_args);
+    (*n_run)++;
 }
 
 int main(void)
@@ -106,12 +128,37 @@ int main(void)
     char *args[max_args]; /* command line (of 80) has max of 40 arguments */
     int should_run = 1;
 
+    // handle history command
+    int n_run = 0;
+    int prev_n_args;
+    char *prev_args[max_args];
+
     while (should_run)
     {
         printf("osh>");
         fflush(stdout);
 
         int n_args = read_args_from_stdin(args, max_args);
+
+        if (n_args == 0)
+        {
+            continue;
+        }
+
+        // handle history command
+        if (n_args == 1 && strcmp(args[0], HISTORY_CMD) == 0)
+        {
+            if (n_run == 0)
+            {
+                printf("%s\n", HISTORY_ERR_MSG);
+            }
+            else
+            {
+                print_args(prev_args, prev_n_args);
+                handle_args(prev_args, prev_n_args, &n_run);
+            }
+            continue;
+        }
 
         /**
          * After reading user input, the steps are:
@@ -120,7 +167,14 @@ int main(void)
          * (3) if command included &, parent will invoke wait()
          */
 
-        fork_and_execute(args, n_args);
+        handle_args(args, n_args, &n_run);
+
+        // store prev args
+        prev_n_args = n_args;
+        for (int i = 0; i < max_args; i++)
+        {
+            prev_args[i] = args[i];
+        }
     }
 
     return 0;

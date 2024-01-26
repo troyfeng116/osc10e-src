@@ -51,9 +51,7 @@ void destroy_args(char *args[], int max_args)
 int read_args_from_stdin(char *args[], int max_args)
 {
     char buffer[MAX_LINE];
-    ssize_t nread;
-
-    nread = read(STDIN_FILENO, buffer, MAX_LINE);
+    ssize_t nread = read(STDIN_FILENO, buffer, MAX_LINE);
     if (nread == -1)
     {
         DIE("read failed");
@@ -97,50 +95,29 @@ int read_args_from_stdin(char *args[], int max_args)
 void execute(char *args[])
 {
     execvp(args[0], args);
-    printf("command %s failed with exit status %d\n", args[0], errno);
-    exit(errno);
+
+    fprintf(stderr, "command %s failed: [%d] %s\n", args[0], errno, strerror(errno));
+    exit(EXIT_FAILURE);
 }
 
 /**
  * Fork child process, execute `args` with `execvp`.
- * Parent process waits unless backgrounded.
+ * Wait for child to join unless backgrounded.
  */
-void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int should_background, int should_null_last_arg)
+void fork_and_execute(char *args[], int n_args, int should_background)
 {
-    pid_t pid;
-    int status;
-
-    pid = fork();
+    pid_t pid = fork();
     if (pid == -1)
     {
         DIE("fork failed")
-        return;
     }
 
     if (pid == 0)
     {
-        // if should NULL out last arg (background/redirect/pipe), remove arg in child process before exec
-        if (should_null_last_arg)
+        // if backgrounded, NULL out last (background) arg in child process before exec
+        if (should_background)
         {
             args[n_args - 1] = NULL;
-        }
-
-        // handle stdin/stdout fd dup
-        if (stdin_fd != KEEP_FD)
-        {
-            if (dup2(stdin_fd, STDIN_FILENO) == -1)
-            {
-                printf("dup2 stdin failed for fds (%d, %d): errno %d\n", stdin_fd, STDIN_FILENO, errno);
-                return;
-            }
-        }
-        if (stdout_fd != KEEP_FD)
-        {
-            if (dup2(stdout_fd, STDOUT_FILENO) == -1)
-            {
-                printf("dup2 stdout failed for fds (%d, %d): errno %d\n", stdout_fd, STDIN_FILENO, errno);
-                return;
-            }
         }
 
         execute(args);
@@ -150,7 +127,7 @@ void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int
         // wait for child to join if not backgrounded
         if (!should_background)
         {
-            if (waitpid(pid, &status, 0) == -1)
+            if (waitpid(pid, NULL, 0) == -1)
             {
                 DIE("waidpid failed");
             }
@@ -158,18 +135,53 @@ void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int
     }
 }
 
+/**
+ * Handle redirect argument at index `redirect_idx`.
+ */
+void handle_redirect(char *args[], int n_args, int redirect_idx, int should_write)
+{
+    char *file_arg = args[redirect_idx + 1];
+    int fd = open(file_arg, should_write ? O_WRONLY | O_CREAT : O_RDONLY, S_IRWXU);
+    if (fd == -1)
+    {
+        fprintf(stderr, "unable to open file %s: [%d] %s\n", file_arg, errno, strerror(errno));
+        return;
+    }
+
+    pid_t pid = fork();
+    if (pid == -1)
+    {
+        DIE("fork failed");
+    }
+
+    if (pid == 0)
+    {
+        dup2(fd, should_write ? STDOUT_FILENO : STDIN_FILENO);
+        args[redirect_idx] = NULL;
+        execute(args);
+    }
+    else
+    {
+        if (waitpid(pid, NULL, 0) == -1)
+        {
+            DIE("waidpid failed");
+        }
+    }
+}
+
+/**
+ * Handle pipe argument at index `pipe_idx`.
+ */
 void handle_pipe(char *args[], int n_args, int pipe_idx)
 {
-    pid_t l_pid, r_pid;
-    int l_status, r_status;
     int pipe_fds[2];
-
     if (pipe(pipe_fds) == -1)
     {
         DIE("pipe failed");
     }
 
-    if ((l_pid = fork()) == -1)
+    pid_t l_pid = fork();
+    if (l_pid == -1)
     {
         DIE("fork failed");
     }
@@ -184,7 +196,8 @@ void handle_pipe(char *args[], int n_args, int pipe_idx)
         execute(args);
     }
 
-    if ((r_pid = fork()) == -1)
+    pid_t r_pid = fork();
+    if (r_pid == -1)
     {
         DIE("fork failed");
     }
@@ -201,30 +214,19 @@ void handle_pipe(char *args[], int n_args, int pipe_idx)
     close(pipe_fds[0]);
     close(pipe_fds[1]);
 
-    waitpid(l_pid, &l_status, 0);
-    waitpid(r_pid, &r_status, 0);
+    waitpid(l_pid, NULL, 0);
+    waitpid(r_pid, NULL, 0);
 }
 
 void handle_args(char *args[], int n_args, int *n_run)
 {
-    int is_backgrounded;
     int is_write;
-    int fd;
-
     for (int i = 0; i < n_args; i++)
     {
         // handle redirects
         if ((is_write = strcmp(args[i], ">")) == 0 || strcmp(args[i], "<") == 0)
         {
-            char *file_arg = args[i + 1];
-            fd = open(file_arg, is_write == 0 ? O_WRONLY | O_CREAT : O_RDONLY, S_IRWXU);
-            if (fd == -1)
-            {
-                printf("unable to open file %s: errno %d\n", file_arg, errno);
-                return;
-            }
-
-            fork_and_execute(args, i + 1, is_write == 0 ? KEEP_FD : fd, is_write == 0 ? fd : KEEP_FD, 0, 1);
+            handle_redirect(args, n_args, i, is_write == 0);
             (*n_run)++;
             return;
         }
@@ -238,9 +240,9 @@ void handle_args(char *args[], int n_args, int *n_run)
         }
     }
 
-    is_backgrounded = strcmp(args[n_args - 1], "&") == 0;
-
-    fork_and_execute(args, n_args, KEEP_FD, KEEP_FD, is_backgrounded, is_backgrounded);
+    // no redirects/pipes -> fork + execute
+    int is_backgrounded = strcmp(args[n_args - 1], "&") == 0;
+    fork_and_execute(args, n_args, is_backgrounded);
     (*n_run)++;
 }
 
@@ -284,7 +286,7 @@ int main(void)
         {
             if (n_run == 0)
             {
-                printf("%s\n", HISTORY_ERR_MSG);
+                fprintf(stderr, "%s\n", HISTORY_ERR_MSG);
             }
             else
             {

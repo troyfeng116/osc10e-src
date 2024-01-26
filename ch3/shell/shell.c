@@ -22,8 +22,6 @@
 #define HISTORY_CMD "!!"
 #define HISTORY_ERR_MSG "No commands in history."
 
-#define KEEP_FD -1
-
 void print_args(char *args[], int n_args)
 {
     for (int i = 0; i < n_args - 1; i++)
@@ -42,6 +40,27 @@ void destroy_args(char *args[], int max_args)
             free(args[i]);
         }
     }
+}
+
+/**
+ * Extract command from buffer into allocated string (must be freed).
+ * Left-inclusive.
+ */
+char *extract_arg(char buffer[], ssize_t from, ssize_t to)
+{
+    int len = to - from + 1; // extra char for null terminator
+    char *arg_str = (char *)malloc(len);
+    if (arg_str == NULL)
+    {
+        DIE("malloc failed");
+    }
+
+    for (ssize_t i = from; i < to; i++)
+    {
+        arg_str[i - from] = buffer[i];
+    }
+    arg_str[len - 1] = '\0';
+    return arg_str;
 }
 
 /**
@@ -66,25 +85,13 @@ int read_args_from_stdin(char *args[], int max_args)
         {
             if (start_idx < buffer_idx)
             {
-                int arg_str_len = buffer_idx - start_idx + 1;
-                char *arg_str = (char *)malloc(arg_str_len);
-                if (arg_str == NULL)
-                {
-                    DIE("malloc failed");
-                }
-
-                for (ssize_t i = start_idx; i < buffer_idx; i++)
-                {
-                    arg_str[i - start_idx] = buffer[i];
-                }
-                arg_str[arg_str_len - 1] = '\0';
-                args[args_idx++] = arg_str;
+                args[args_idx++] = extract_arg(buffer, start_idx, buffer_idx);
             }
             start_idx = buffer_idx + 1;
         }
     }
 
-    // null-terminate rest of args
+    // NULL rest of args
     for (int i = args_idx; i < max_args; i++)
     {
         args[i] = NULL;
@@ -141,7 +148,7 @@ void fork_and_execute(char *args[], int n_args, int should_background)
 void handle_redirect(char *args[], int n_args, int redirect_idx, int should_write)
 {
     char *file_arg = args[redirect_idx + 1];
-    int fd = open(file_arg, should_write ? O_WRONLY | O_CREAT : O_RDONLY, S_IRWXU);
+    int fd = open(file_arg, should_write ? O_WRONLY | O_CREAT | O_TRUNC : O_RDONLY, S_IRWXU);
     if (fd == -1)
     {
         fprintf(stderr, "unable to open file %s: [%d] %s\n", file_arg, errno, strerror(errno));

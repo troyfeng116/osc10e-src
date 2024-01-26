@@ -6,6 +6,8 @@
  */
 
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -19,6 +21,8 @@
 
 #define HISTORY_CMD "!!"
 #define HISTORY_ERR_MSG "No commands in history."
+
+#define KEEP_FD -1
 
 void print_args(char *args[], int n_args)
 {
@@ -82,8 +86,11 @@ int read_args_from_stdin(char *args[], int max_args)
         }
     }
 
-    // null-terminate args
-    args[args_idx] = NULL;
+    // null-terminate rest of args
+    for (int i = args_idx; i < max_args; i++)
+    {
+        args[i] = NULL;
+    }
     return args_idx;
 }
 
@@ -91,9 +98,8 @@ int read_args_from_stdin(char *args[], int max_args)
  * Fork child process, execute `args` with `execvp`.
  * Parent process waits unless backgrounded.
  */
-void fork_and_execute(char *args[], int n_args)
+void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int should_background, int should_null_last_arg)
 {
-    int is_backgrounded;
     int pid;
     int status;
 
@@ -104,23 +110,40 @@ void fork_and_execute(char *args[], int n_args)
         return;
     }
 
-    is_backgrounded = strcmp(args[n_args - 1], "&") == 0;
-
     if (pid == 0)
     {
-        // if backgrounded, remove background arg in child process before exec
-        if (is_backgrounded)
+        // if should NULL out last arg (background/redirect/pipe), remove arg in child process before exec
+        if (should_null_last_arg)
         {
             args[n_args - 1] = NULL;
         }
+
+        // handle stdin/stdout fd dup
+        if (stdin_fd != KEEP_FD)
+        {
+            if (dup2(stdin_fd, STDIN_FILENO) == -1)
+            {
+                printf("dup2 stdin failed for fds (%d, %d): errno %d\n", stdin_fd, STDIN_FILENO, errno);
+                return;
+            }
+        }
+        if (stdout_fd != KEEP_FD)
+        {
+            if (dup2(stdout_fd, STDOUT_FILENO) == -1)
+            {
+                printf("dup2 stdout failed for fds (%d, %d): errno %d\n", stdout_fd, STDIN_FILENO, errno);
+                return;
+            }
+        }
+
         execvp(args[0], args);
-        printf("command %s failed with status code %d\n", args[0], errno);
+        printf("command %s failed with exit status %d\n", args[0], errno);
         exit(errno);
     }
     else
     {
         // wait for child to join if not backgrounded
-        if (!is_backgrounded)
+        if (!should_background)
         {
             if (waitpid(0, &status, 0) == -1)
             {
@@ -132,7 +155,31 @@ void fork_and_execute(char *args[], int n_args)
 
 void handle_args(char *args[], int n_args, int *n_run)
 {
-    fork_and_execute(args, n_args);
+    int is_backgrounded;
+    int is_write;
+    int fd;
+
+    for (int i = 0; i < n_args; i++)
+    {
+        if ((is_write = strcmp(args[i], ">")) == 0 || strcmp(args[i], "<") == 0)
+        {
+            char *file_arg = args[i + 1];
+            fd = open(file_arg, is_write == 0 ? O_WRONLY | O_CREAT : O_RDONLY, S_IRWXU);
+            if (fd == -1)
+            {
+                printf("unable to open file %s: errno %d\n", file_arg, errno);
+                return;
+            }
+
+            fork_and_execute(args, i + 1, is_write == 0 ? KEEP_FD : fd, is_write == 0 ? fd : KEEP_FD, 0, 1);
+            (*n_run)++;
+            return;
+        }
+    }
+
+    is_backgrounded = strcmp(args[n_args - 1], "&") == 0;
+
+    fork_and_execute(args, n_args, KEEP_FD, KEEP_FD, is_backgrounded, is_backgrounded);
     (*n_run)++;
 }
 

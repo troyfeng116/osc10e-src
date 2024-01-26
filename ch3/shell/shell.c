@@ -153,6 +153,54 @@ void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int
     }
 }
 
+void handle_pipe(char *args[], int n_args, int pipe_idx)
+{
+    pid_t l_pid, r_pid;
+    int pipe_fds[2];
+
+    if (pipe(pipe_fds) == -1)
+    {
+        DIE("pipe failed");
+    }
+
+    if ((l_pid = fork()) == -1)
+    {
+        DIE("fork failed");
+    }
+    if (l_pid == 0)
+    {
+        // write to write end
+        close(pipe_fds[0]);
+        dup2(pipe_fds[1], STDOUT_FILENO);
+        close(pipe_fds[1]);
+
+        args[pipe_idx] = NULL;
+        execvp(args[0], args);
+        printf("command %s failed with exit status %d\n", args[0], errno);
+        exit(errno);
+    }
+
+    if ((r_pid = fork()) == -1)
+    {
+        DIE("fork failed");
+    }
+    if (r_pid == 0)
+    {
+        // read from read end
+        close(pipe_fds[1]);
+        dup2(pipe_fds[0], STDIN_FILENO);
+        close(pipe_fds[0]);
+
+        execvp(args[pipe_idx + 1], args + pipe_idx + 1);
+        printf("command %s failed with exit status %d\n", args[pipe_idx + 1], errno);
+        exit(errno);
+    }
+
+    waitpid(-1, NULL, 0);
+    close(pipe_fds[0]);
+    close(pipe_fds[1]);
+}
+
 void handle_args(char *args[], int n_args, int *n_run)
 {
     int is_backgrounded;
@@ -161,6 +209,7 @@ void handle_args(char *args[], int n_args, int *n_run)
 
     for (int i = 0; i < n_args; i++)
     {
+        // handle redirects
         if ((is_write = strcmp(args[i], ">")) == 0 || strcmp(args[i], "<") == 0)
         {
             char *file_arg = args[i + 1];
@@ -172,6 +221,14 @@ void handle_args(char *args[], int n_args, int *n_run)
             }
 
             fork_and_execute(args, i + 1, is_write == 0 ? KEEP_FD : fd, is_write == 0 ? fd : KEEP_FD, 0, 1);
+            (*n_run)++;
+            return;
+        }
+
+        // handle pipes
+        if (strcmp(args[i], "|") == 0)
+        {
+            handle_pipe(args, n_args, i);
             (*n_run)++;
             return;
         }

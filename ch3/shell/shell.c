@@ -94,13 +94,20 @@ int read_args_from_stdin(char *args[], int max_args)
     return args_idx;
 }
 
+void execute(char *args[])
+{
+    execvp(args[0], args);
+    printf("command %s failed with exit status %d\n", args[0], errno);
+    exit(errno);
+}
+
 /**
  * Fork child process, execute `args` with `execvp`.
  * Parent process waits unless backgrounded.
  */
 void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int should_background, int should_null_last_arg)
 {
-    int pid;
+    pid_t pid;
     int status;
 
     pid = fork();
@@ -136,16 +143,14 @@ void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int
             }
         }
 
-        execvp(args[0], args);
-        printf("command %s failed with exit status %d\n", args[0], errno);
-        exit(errno);
+        execute(args);
     }
     else
     {
         // wait for child to join if not backgrounded
         if (!should_background)
         {
-            if (waitpid(0, &status, 0) == -1)
+            if (waitpid(pid, &status, 0) == -1)
             {
                 DIE("waidpid failed");
             }
@@ -156,6 +161,7 @@ void fork_and_execute(char *args[], int n_args, int stdin_fd, int stdout_fd, int
 void handle_pipe(char *args[], int n_args, int pipe_idx)
 {
     pid_t l_pid, r_pid;
+    int l_status, r_status;
     int pipe_fds[2];
 
     if (pipe(pipe_fds) == -1)
@@ -175,9 +181,7 @@ void handle_pipe(char *args[], int n_args, int pipe_idx)
         close(pipe_fds[1]);
 
         args[pipe_idx] = NULL;
-        execvp(args[0], args);
-        printf("command %s failed with exit status %d\n", args[0], errno);
-        exit(errno);
+        execute(args);
     }
 
     if ((r_pid = fork()) == -1)
@@ -191,14 +195,14 @@ void handle_pipe(char *args[], int n_args, int pipe_idx)
         dup2(pipe_fds[0], STDIN_FILENO);
         close(pipe_fds[0]);
 
-        execvp(args[pipe_idx + 1], args + pipe_idx + 1);
-        printf("command %s failed with exit status %d\n", args[pipe_idx + 1], errno);
-        exit(errno);
+        execute(args + pipe_idx + 1);
     }
 
-    waitpid(-1, NULL, 0);
     close(pipe_fds[0]);
     close(pipe_fds[1]);
+
+    waitpid(l_pid, &l_status, 0);
+    waitpid(r_pid, &r_status, 0);
 }
 
 void handle_args(char *args[], int n_args, int *n_run)

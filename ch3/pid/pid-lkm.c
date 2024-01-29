@@ -110,6 +110,7 @@ static ssize_t proc_write(struct file *file, const char __user *usr_buf, size_t 
     k_mem = kmalloc(count, GFP_KERNEL);
 
     /* copies user space usr_buf to kernel buffer */
+    // Why copy to kspace? Could pass usr_buf to sscanf directly
     if (copy_from_user(k_mem, usr_buf, count))
     {
         printk(KERN_INFO "Error copying from user\n");

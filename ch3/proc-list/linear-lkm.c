@@ -19,12 +19,6 @@
 #define BUFFER_SIZE 128
 #define PROC_NAME "proc-list-linear"
 
-/**
- * Function prototypes
- */
-static ssize_t proc_read(struct file *file, char *buf, size_t count, loff_t *pos);
-static ssize_t proc_write(struct file *file, const char __user *usr_buf, size_t count, loff_t *pos);
-
 static struct file_operations proc_ops = {
     .owner = THIS_MODULE,
 };

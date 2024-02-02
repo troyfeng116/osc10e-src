@@ -1,4 +1,4 @@
-obj-m += linear-lkm.o
+obj-m += linear-lkm.o dfs-lkm.o
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 clean:

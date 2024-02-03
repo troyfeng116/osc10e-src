@@ -1,4 +1,4 @@
-obj-m += color-lkm.o
+obj-m += color-lkm.o collatz-lkm.o
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 clean:

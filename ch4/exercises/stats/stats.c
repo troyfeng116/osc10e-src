@@ -20,9 +20,6 @@ void *mode_runner(void *param);
 
 int main(int argc, char **argv)
 {
-    double *arg_values;
-    int i;
-
     struct stats_args runner_args; // shared args for each runner
     pthread_t tids[N_RUNNERS];
     pthread_attr_t attrs[N_RUNNERS];
@@ -33,8 +30,8 @@ int main(int argc, char **argv)
         DIE("usage: ./stats [list of numbers]");
     }
 
-    arg_values = (double *)malloc(sizeof(double) * (argc - 1));
-    for (i = 1; i < argc; i++)
+    double *arg_values = (double *)malloc(sizeof(double) * (argc - 1));
+    for (int i = 1; i < argc; i++)
     {
         arg_values[i - 1] = atof(argv[i]);
     }
@@ -48,12 +45,10 @@ int main(int argc, char **argv)
         pthread_create(&tids[i], &attrs[i], runners[i], &runner_args);
     }
 
-    printf("joining threads...\n");
     for (int i = 0; i < N_RUNNERS; i++)
     {
         pthread_join(tids[i], NULL);
     }
-    printf("done joining threads\n");
 
     printf("mean = %f, median = %f, mode = %f\n", mean, median, mode);
 

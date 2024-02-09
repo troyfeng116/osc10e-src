@@ -4,89 +4,78 @@
 
 #define BOARD_SIZE 9
 
+#define ROW 0
+#define COL 1
+#define SQUARE 2
+#define DIMS 3
+
 static int SUDOKU[BOARD_SIZE][BOARD_SIZE] = {
-    {6, 2, 4, 5, 3, 9, 1, 8, 9},
+    {6, 2, 4, 5, 3, 9, 1, 8, 7},
     {5, 1, 9, 7, 2, 8, 6, 3, 4},
     {8, 3, 7, 6, 1, 4, 2, 9, 5},
     {1, 4, 3, 8, 6, 5, 7, 2, 9},
     {9, 5, 8, 2, 4, 7, 3, 6, 1},
     {7, 6, 2, 3, 9, 1, 4, 5, 8},
     {3, 7, 1, 9, 5, 6, 8, 4, 2},
-    {4, 9, 6, 1, 8, 2, 5, 7, 3},
+    {4, 9, 6, 1, 8, 2, 1, 7, 3},
     {2, 8, 5, 4, 7, 3, 9, 1, 6}};
 
-static int row_results[BOARD_SIZE];
-static int col_results[BOARD_SIZE];
-static int square_results[BOARD_SIZE];
+// shared global for worker threads to write to
+static int results[DIMS][BOARD_SIZE];
 
 void *check_row(void *args);
 void *check_col(void *args);
 void *check_square(void *args);
 
-struct square_args
-{
-    int r;
-    int c;
-};
-
 int main(int argc, char **argv)
 {
-    struct square_args square_args[BOARD_SIZE];
-    int row_col_args[BOARD_SIZE];
-    pthread_t row_tids[BOARD_SIZE], col_tids[BOARD_SIZE], square_tids[BOARD_SIZE];
-    pthread_attr_t row_attrs[BOARD_SIZE], col_attrs[BOARD_SIZE], square_attrs[BOARD_SIZE];
+    int idx[BOARD_SIZE];
+    pthread_t tids[DIMS][BOARD_SIZE];
+    pthread_attr_t attrs[DIMS][BOARD_SIZE];
+    void *(*runners[DIMS])(void *);
 
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        row_col_args[i] = i;
+        idx[i] = i;
     }
 
-    // row workers
-    for (int r = 0; r < BOARD_SIZE; r++)
-    {
-        pthread_attr_init(&row_attrs[r]);
-        pthread_create(&row_tids[r], &row_attrs[r], check_row, &row_col_args[r]);
-    }
+    runners[ROW] = check_row;
+    runners[COL] = check_col;
+    runners[SQUARE] = check_square;
 
-    // col workers
-    for (int c = 0; c < BOARD_SIZE; c++)
-    {
-        pthread_attr_init(&col_attrs[c]);
-        pthread_create(&col_tids[c], &col_attrs[c], check_col, &row_col_args[c]);
-    }
-
-    // square workers
+    // start workers
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        int r = (i / 3) * 3, c = (i % 3) * 3;
-        square_args[i].r = r;
-        square_args[i].c = c;
-        pthread_attr_init(&square_attrs[i]);
-        pthread_create(&square_tids[i], &square_attrs[i], check_square, &square_args[i]);
+        for (int d = 0; d < DIMS; d++)
+        {
+            pthread_attr_init(&attrs[d][i]);
+            pthread_create(&tids[d][i], &attrs[d][i], runners[d], &idx[i]);
+        }
     }
 
     // join all workers
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        pthread_join(row_tids[i], NULL);
-        pthread_join(col_tids[i], NULL);
-        pthread_join(square_tids[i], NULL);
+        for (int d = 0; d < DIMS; d++)
+        {
+            pthread_join(tids[d][i], NULL);
+        }
     }
 
     // validate results
     for (int i = 0; i < BOARD_SIZE; i++)
     {
-        if (row_results[i] > 0)
+        if (results[ROW][i] > 0)
         {
-            printf("row %d missing value %d\n", i, row_results[i]);
+            printf("row %d missing value %d\n", i, results[ROW][i]);
         }
-        if (col_results[i] > 0)
+        if (results[COL][i] > 0)
         {
-            printf("col %d missing value %d\n", i, col_results[i]);
+            printf("col %d missing value %d\n", i, results[COL][i]);
         }
-        if (square_results[i] > 0)
+        if (results[SQUARE][i] > 0)
         {
-            printf("square %d missing value %d\n", i, square_results[i]);
+            printf("square %d missing value %d\n", i, results[SQUARE][i]);
         }
     }
 
@@ -116,7 +105,7 @@ void *check_row(void *args)
     {
         found[SUDOKU[r][c] - 1] = 1;
     }
-    row_results[r] = check_found_arr(found);
+    results[ROW][r] = check_found_arr(found);
     return NULL;
 }
 
@@ -128,7 +117,7 @@ void *check_col(void *args)
     {
         found[SUDOKU[r][c] - 1] = 1;
     }
-    col_results[c] = check_found_arr(found);
+    results[COL][c] = check_found_arr(found);
     return NULL;
 }
 
@@ -137,8 +126,8 @@ void *check_col(void *args)
  */
 void *check_square(void *args)
 {
-    struct square_args *square_args = (struct square_args *)args;
-    int r = square_args->r, c = square_args->c;
+    int square_idx = *(int *)args;
+    int r = (square_idx / 3) * 3, c = (square_idx % 3) * 3;
     int found[BOARD_SIZE];
     for (int i = r; i < r + 3; i++)
     {
@@ -147,6 +136,6 @@ void *check_square(void *args)
             found[SUDOKU[i][j] - 1] = 1;
         }
     }
-    square_results[(r / 3) * 3 + c / 3] = check_found_arr(found);
+    results[SQUARE][square_idx] = check_found_arr(found);
     return NULL;
 }

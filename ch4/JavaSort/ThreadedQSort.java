@@ -29,7 +29,6 @@ public class ThreadedQSort<T extends Comparable<? super T>> extends BaseThreaded
                 myPivotIdx++;
             }
         }
-
         swap(myPivotIdx, getEnd() - 1);
 
         ThreadedQSort<T> myLeftTask = new ThreadedQSort<>(getArr(), getStart(), myPivotIdx);
@@ -40,6 +39,7 @@ public class ThreadedQSort<T extends Comparable<? super T>> extends BaseThreaded
 
         myLeftTask.join();
         myRightTask.join();
+
         System.out.printf("[ThreadedQSort] (%d, %d) joined (%d, %d) and (%d, %d)\n",
                 getStart(), getEnd(), getStart(), myPivotIdx, myPivotIdx + 1, getEnd());
     }

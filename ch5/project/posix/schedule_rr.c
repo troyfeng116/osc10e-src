@@ -16,6 +16,7 @@ void add(char *name, int priority, int burst)
     {
         q = create_queue();
     }
+
     struct node *node = create_node(name, -1, priority, burst);
     push_queue(q, node);
 
@@ -36,11 +37,6 @@ void schedule()
         slice = polled_task->burst > QUANTUM ? QUANTUM : polled_task->burst;
 
         run(polled_task, slice);
-        // TODO: move to run?
-        // polled_task->burst -= slice;
-
-        // printf("[schedule] executing [%s] for %d, remaining task: ", polled_task->name, slice);
-        // print_task(polled_task);
 
         if (polled_task->burst > 0)
         {

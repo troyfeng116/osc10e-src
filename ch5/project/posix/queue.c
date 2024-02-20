@@ -42,6 +42,7 @@ void push_queue(Queue *q, struct node *new_node)
     {
         q->head = new_node;
     }
+
     q->tail = new_node;
     q->sz++;
 }
@@ -51,7 +52,7 @@ void print_queue(Queue *q)
     struct node *temp = q->tail;
     while (temp != NULL)
     {
-        printf("[%s] [%d] [%d]\n", temp->task->name, temp->task->priority, temp->task->burst);
+        print_task(temp->task);
         temp = temp->next;
     }
 }
@@ -60,11 +61,13 @@ void destroy_queue(Queue *q)
 {
     struct node *prev;
     struct node *temp = q->tail;
+
     while (temp != NULL)
     {
         prev = temp;
         temp = temp->next;
         destroy_node(prev);
     }
+
     free(q);
 }

@@ -17,8 +17,8 @@ clean:
 	rm -rf priority
 	rm -rf priority_rr
 
-rr: driver.o list.o queue.o CPU.o schedule_rr.o
-	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o CPU.o
+rr: driver.o list.o queue.o task.o CPU.o schedule_rr.o
+	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o task.o CPU.o
 
 sjf: driver.o list.o CPU.o schedule_sjf.o
 	$(CC) $(CFLAGS) -o sjf driver.o schedule_sjf.o list.o CPU.o
@@ -52,6 +52,9 @@ list.o: list.c list.h
 
 queue.o: queue.c queue.h
 	$(CC) $(CFLAGS) -c queue.c
+
+task.o: task.c task.h
+	$(CC) $(CFLAGS) -c task.c
 
 CPU.o: CPU.c cpu.h
 	$(CC) $(CFLAGS) -c CPU.c

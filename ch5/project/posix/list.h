@@ -10,8 +10,6 @@ struct node
     struct node *next;
 };
 
-Task *create_task(char *name, int tid, int priority, int burst);
-void print_task(Task *task);
 struct node *create_node(char *name, int tid, int priority, int burst);
 void destroy_node(struct node *node);
 

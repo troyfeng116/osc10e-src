@@ -14,4 +14,7 @@ typedef struct task
     int burst;
 } Task;
 
+Task *create_task(char *name, int tid, int priority, int burst);
+void print_task(Task *task);
+
 #endif

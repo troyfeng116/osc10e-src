@@ -11,11 +11,8 @@ void run(Task *task, int slice)
 {
     printf("[CPU] running task = [%s] [%d] [%d] for %d units.\n", task->name, task->priority, task->burst, slice);
 
-    if (slice <= task->burst)
-    {
-        task->burst -= slice;
-    }
-    else
+    task->burst -= slice;
+    if (task->burst < 0)
     {
         task->burst = 0;
     }

@@ -1,46 +1,56 @@
-#include "list.h"
+#include "cpu.h"
+#include "queue.h"
 #include "schedulers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-static struct node *list_head = NULL;
+static Queue *q = NULL;
 
-// add a task to the list
+// add a task to the queue
 void add(char *name, int priority, int burst)
 {
-    printf("add name=%s, prio=%d, burst=%d\n", name, priority, burst);
+    if (q == NULL)
+    {
+        q = create_queue();
+    }
+    struct node *node = create_node(name, -1, priority, burst);
+    push_queue(q, node);
 
-    if (list_head == NULL)
-    {
-        list_head = (struct node *)malloc(sizeof(struct node));
-        list_head->task = create_task(name, -1, priority, burst);
-        list_head->next = NULL;
-    }
-    else
-    {
-        Task *task = create_task(name, -1, priority, burst);
-        insert(&list_head, task);
-    }
+    printf("[add]: ");
+    print_task(node->task);
 }
 
 // invoke the scheduler
 void schedule()
 {
-    struct node *temp;
+    struct node *polled_node;
+    Task *polled_task;
+    int slice;
 
-    printf("schedule\n");
-
-    traverse(list_head);
-
-    while (list_head != NULL)
+    while ((polled_node = poll_queue(q)) != NULL)
     {
-        temp = list_head;
-        Task *task = list_head->task;
-        delete (&list_head, task);
-        free(task->name);
-        free(task);
-        free(temp);
+        polled_task = polled_node->task;
+        slice = polled_task->burst > QUANTUM ? QUANTUM : polled_task->burst;
+
+        run(polled_task, slice);
+        // TODO: move to run?
+        // polled_task->burst -= slice;
+
+        // printf("[schedule] executing [%s] for %d, remaining task: ", polled_task->name, slice);
+        // print_task(polled_task);
+
+        if (polled_task->burst > 0)
+        {
+            push_queue(q, polled_node);
+        }
+        else
+        {
+            destroy_node(polled_node);
+        }
     }
+
+    destroy_queue(q);
 }

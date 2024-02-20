@@ -9,8 +9,39 @@
 #include "list.h"
 #include "task.h"
 
+Task *create_task(char *name, int tid, int priority, int burst)
+{
+    Task *task = (Task *)malloc(sizeof(Task));
+    task->name = name;
+    task->tid = tid;
+    task->priority = priority;
+    task->burst = burst;
+    return task;
+}
+
+void print_task(Task *task)
+{
+    printf("[%s] [%d] [%d]\n", task->name, task->priority, task->burst);
+}
+
+struct node *create_node(char *name, int tid, int priority, int burst)
+{
+    Task *task = create_task(name, tid, priority, burst);
+    struct node *node = (struct node *)malloc(sizeof(struct node));
+    node->task = task;
+    node->next = NULL;
+    return node;
+}
+
+void destroy_node(struct node *node)
+{
+    free(node->task->name);
+    free(node->task);
+    free(node);
+}
+
 // add a new task to the list of tasks
-void insert(struct node **head, Task *newTask)
+void list_insert(struct node **head, Task *newTask)
 {
     // add the new task to the list
     struct node *newNode = malloc(sizeof(struct node));
@@ -21,7 +52,7 @@ void insert(struct node **head, Task *newTask)
 }
 
 // delete the selected task from the list
-void delete(struct node **head, Task *task)
+void list_remove(struct node **head, Task *task)
 {
     struct node *temp;
     struct node *prev;
@@ -48,24 +79,14 @@ void delete(struct node **head, Task *task)
 }
 
 // traverse the list
-void traverse(struct node *head)
+void list_traverse(struct node *head)
 {
     struct node *temp;
     temp = head;
 
     while (temp != NULL)
     {
-        printf("[%s] [%d] [%d]\n", temp->task->name, temp->task->priority, temp->task->burst);
+        print_task(temp->task);
         temp = temp->next;
     }
-}
-
-Task *create_task(char *name, int tid, int priority, int burst)
-{
-    Task *task = (Task *)malloc(sizeof(Task));
-    task->name = name;
-    task->tid = tid;
-    task->priority = priority;
-    task->burst = burst;
-    return task;
 }

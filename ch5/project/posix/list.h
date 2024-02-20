@@ -10,10 +10,12 @@ struct node
     struct node *next;
 };
 
-// insert and delete operations.
-void insert(struct node **head, Task *task);
-void delete(struct node **head, Task *task);
-void traverse(struct node *head);
-
-// TODO: move to helpers/task
 Task *create_task(char *name, int tid, int priority, int burst);
+void print_task(Task *task);
+struct node *create_node(char *name, int tid, int priority, int burst);
+void destroy_node(struct node *node);
+
+// insert and delete operations.
+void list_insert(struct node **head, Task *task);
+void list_remove(struct node **head, Task *task);
+void list_traverse(struct node *head);

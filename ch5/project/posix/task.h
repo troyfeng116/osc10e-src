@@ -6,7 +6,8 @@
 #define TASK_H
 
 // representation of a task
-typedef struct task {
+typedef struct task
+{
     char *name;
     int tid;
     int priority;

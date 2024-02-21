@@ -20,8 +20,8 @@ clean:
 rr: driver.o list.o queue.o task.o CPU.o schedule_rr.o
 	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o task.o CPU.o
 
-sjf: driver.o list.o CPU.o schedule_sjf.o
-	$(CC) $(CFLAGS) -o sjf driver.o schedule_sjf.o list.o CPU.o
+sjf: driver.o list.o queue.o task.o CPU.o schedule_sjf.o
+	$(CC) $(CFLAGS) -o sjf driver.o schedule_sjf.o list.o queue.o task.o CPU.o
 
 fcfs: driver.o list.o queue.o task.o CPU.o schedule_fcfs.o
 	$(CC) $(CFLAGS) -o fcfs driver.o schedule_fcfs.o list.o queue.o task.o CPU.o

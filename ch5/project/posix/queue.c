@@ -47,9 +47,25 @@ void push_queue(Queue *q, struct node *new_node)
     q->sz++;
 }
 
+// drain contents of queue to array; array must be freed
+Task **drain_to_array(Queue *q)
+{
+    int sz = q->sz;
+    struct node *cur = q->head;
+
+    Task **task_arr = (Task **)malloc(sizeof(Task *) * sz);
+    for (int i = 0; i < sz; i++)
+    {
+        task_arr[i] = cur->task;
+        cur = cur->next;
+    }
+
+    return task_arr;
+}
+
 void print_queue(Queue *q)
 {
-    struct node *temp = q->tail;
+    struct node *temp = q->head;
     while (temp != NULL)
     {
         print_task(temp->task);
@@ -60,7 +76,7 @@ void print_queue(Queue *q)
 void destroy_queue(Queue *q)
 {
     struct node *prev;
-    struct node *temp = q->tail;
+    struct node *temp = q->head;
 
     while (temp != NULL)
     {

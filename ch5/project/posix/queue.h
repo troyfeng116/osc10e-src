@@ -1,3 +1,6 @@
+#ifndef QUEUE_H
+#define QUEUE_H
+
 #include "list.h"
 
 typedef struct queue
@@ -12,3 +15,5 @@ void push_queue(Queue *q, struct node *new_node);
 Task **drain_to_array(Queue *q);
 void print_queue(Queue *q);
 void destroy_queue(Queue *q);
+
+#endif

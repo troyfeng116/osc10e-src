@@ -2,6 +2,9 @@
  * list data structure containing the tasks in the system
  */
 
+#ifndef LIST_H
+#define LIST_H
+
 #include "task.h"
 
 struct node
@@ -17,3 +20,5 @@ void destroy_node(struct node *node);
 void list_insert(struct node **head, Task *task);
 void list_remove(struct node **head, Task *task);
 void list_traverse(struct node *head);
+
+#endif

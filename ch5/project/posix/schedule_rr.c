@@ -4,23 +4,6 @@
 
 #include <stdio.h>
 
-static Queue *q = NULL;
-
-// add a task to the queue
-void add(char *name, int priority, int burst)
-{
-    if (q == NULL)
-    {
-        q = create_queue();
-    }
-
-    struct node *node = create_node(name, -1, priority, burst);
-    push_queue(q, node);
-
-    printf("[add]: ");
-    print_task(node->task);
-}
-
 // invoke the scheduler
 void schedule()
 {
@@ -28,7 +11,7 @@ void schedule()
     Task *polled_task;
     int slice;
 
-    while ((polled_node = poll_queue(q)) != NULL)
+    while ((polled_node = poll_queue(TASK_QUEUE)) != NULL)
     {
         polled_task = polled_node->task;
         slice = polled_task->burst > QUANTUM ? QUANTUM : polled_task->burst;
@@ -37,7 +20,7 @@ void schedule()
 
         if (polled_task->burst > 0)
         {
-            push_queue(q, polled_node);
+            push_queue(TASK_QUEUE, polled_node);
         }
         else
         {
@@ -45,5 +28,5 @@ void schedule()
         }
     }
 
-    destroy_queue(q);
+    destroy_queue(TASK_QUEUE);
 }

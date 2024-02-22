@@ -26,8 +26,8 @@ sjf: driver.o list.o queue.o task.o CPU.o schedule_sjf.o
 fcfs: driver.o list.o queue.o task.o CPU.o schedule_fcfs.o
 	$(CC) $(CFLAGS) -o fcfs driver.o schedule_fcfs.o list.o queue.o task.o CPU.o
 
-priority: driver.o list.o CPU.o schedule_priority.o
-	$(CC) $(CFLAGS) -o priority driver.o schedule_priority.o list.o CPU.o
+priority: driver.o list.o queue.o task.o CPU.o schedule_priority.o
+	$(CC) $(CFLAGS) -o priority driver.o schedule_priority.o list.o queue.o task.o CPU.o
 
 schedule_fcfs.o: schedule_fcfs.c
 	$(CC) $(CFLAGS) -c schedule_fcfs.c

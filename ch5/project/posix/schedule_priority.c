@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// comparator: order tasks by priority ascending, tiebreak by tid (FIFO)
 int comp_tasks_prio(const void *a, const void *b)
 {
     Task **a_task = (Task **)a;
@@ -18,12 +19,13 @@ void schedule()
     int sz = TASK_QUEUE->sz;
     Task **task_arr = drain_to_array(TASK_QUEUE);
 
-    // shortest job first
+    // highest prio (lowest prio number) job first
     qsort(task_arr, sz, sizeof(Task *), comp_tasks_prio);
 
     for (int i = 0; i < sz; i++)
     {
         run(task_arr[i], task_arr[i]->burst);
+        destroy_task(task_arr[i]);
     }
 
     free(task_arr);

@@ -18,10 +18,10 @@ struct node *create_node(char *name, int tid, int priority, int burst)
     return node;
 }
 
+// completely destroy node->task, free node
 void destroy_node(struct node *node)
 {
-    free(node->task->name);
-    free(node->task);
+    destroy_task(node->task);
     free(node);
 }
 

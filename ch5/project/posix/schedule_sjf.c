@@ -24,6 +24,7 @@ void schedule()
     for (int i = 0; i < sz; i++)
     {
         run(task_arr[i], task_arr[i]->burst);
+        destroy_task(task_arr[i]);
     }
 
     free(task_arr);

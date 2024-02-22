@@ -29,23 +29,26 @@ fcfs: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_fcfs.o
 priority: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_priority.o
 	$(CC) $(CFLAGS) -o priority driver.o schedule_priority.o list.o queue.o task.o CPU.o add.o tid_manager.o
 
-schedule_fcfs.o: schedule_fcfs.c
-	$(CC) $(CFLAGS) -c schedule_fcfs.c
+priority_rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_priority_rr.o
+	$(CC) $(CFLAGS) -o priority_rr driver.o schedule_priority_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o
 
-priority_rr: driver.o list.o CPU.o schedule_priority_rr.o
-	$(CC) $(CFLAGS) -o priority_rr driver.o schedule_priority_rr.o list.o CPU.o
-
-driver.o: driver.c
-	$(CC) $(CFLAGS) -c driver.c
+schedule_rr.o: schedule_rr.c
+	$(CC) $(CFLAGS) -c schedule_rr.c
 
 schedule_sjf.o: schedule_sjf.c
 	$(CC) $(CFLAGS) -c schedule_sjf.c
 
+schedule_fcfs.o: schedule_fcfs.c
+	$(CC) $(CFLAGS) -c schedule_fcfs.c
+
 schedule_priority.o: schedule_priority.c
 	$(CC) $(CFLAGS) -c schedule_priority.c
 
-schedule_rr.o: schedule_rr.c
-	$(CC) $(CFLAGS) -c schedule_rr.c
+schedule_priority_rr.o: schedule_priority_rr.c
+	$(CC) $(CFLAGS) -c schedule_priority_rr.c
+
+driver.o: driver.c
+	$(CC) $(CFLAGS) -c driver.c
 
 list.o: list.c list.h
 	$(CC) $(CFLAGS) -c list.c

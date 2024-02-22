@@ -16,7 +16,7 @@ struct node *poll_queue(Queue *q)
 {
     if (q->sz == 0)
     {
-        fprintf(stderr, "[Queue] cannot poll empty queue\n");
+        // fprintf(stderr, "[Queue] cannot poll empty queue\n");
         return NULL;
     }
 
@@ -47,17 +47,20 @@ void push_queue(Queue *q, struct node *new_node)
     q->sz++;
 }
 
-// drain contents of queue to array; array must be freed
+// drain contents of queue to array; queue will be empty
+// array will contain q->sz tasks, in queued FIFO order
+// NOTE: array and all allocated tasks in array must be freed
 Task **drain_to_array(Queue *q)
 {
+    struct node *polled_node;
     int sz = q->sz;
-    struct node *cur = q->head;
 
     Task **task_arr = (Task **)malloc(sizeof(Task *) * sz);
     for (int i = 0; i < sz; i++)
     {
-        task_arr[i] = cur->task;
-        cur = cur->next;
+        polled_node = poll_queue(q);
+        task_arr[i] = polled_node->task;
+        free(polled_node);
     }
 
     return task_arr;

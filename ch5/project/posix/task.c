@@ -15,5 +15,6 @@ Task *create_task(char *name, int tid, int priority, int burst)
 
 void print_task(Task *task)
 {
-    printf("[%s] [%d] [%d]\n", task->name, task->priority, task->burst);
+    printf("[%s] tid=[%d] prio=[%d] burst=[%d]\n",
+           task->name, task->tid, task->priority, task->burst);
 }

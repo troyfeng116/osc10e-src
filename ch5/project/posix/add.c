@@ -1,5 +1,6 @@
 #include "schedulers.h"
 #include "queue.h"
+#include "tid_manager.h"
 
 #include <stdio.h>
 
@@ -13,7 +14,8 @@ void add(char *name, int priority, int burst)
         TASK_QUEUE = create_queue();
     }
 
-    struct node *node = create_node(name, -1, priority, burst);
+    int tid = get_next_tid();
+    struct node *node = create_node(name, tid, priority, burst);
     push_queue(TASK_QUEUE, node);
 
     printf("[add]: ");

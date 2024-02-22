@@ -9,7 +9,7 @@ int comp_tasks_prio(const void *a, const void *b)
 {
     Task **a_task = (Task **)a;
     Task **b_task = (Task **)b;
-    return (*a_task)->priority - (*b_task)->priority;
+    return (*a_task)->priority == (*b_task)->priority ? (*a_task)->tid - (*b_task)->tid : (*a_task)->priority - (*b_task)->priority;
 }
 
 // invoke the scheduler

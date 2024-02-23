@@ -6,15 +6,27 @@
 
 #include "task.h"
 
+static int TIME = 0;
+
 // run this task for the specified time slice
 void run(Task *task, int slice)
 {
-    printf("[CPU] running task = [%s] tid=[%d] prio=[%d] burst=[%d] for %d units.\n",
-           task->name, task->tid, task->priority, task->burst, slice);
+    int start_time = TIME;
+    printf("[CPU] TIME=%d : running task = [%s] tid=[%d] prio=[%d] burst=[%d] remaining=[%d] for %d units.\n",
+           TIME, task->name, task->tid, task->priority, task->burst, task->_remaining_burst, slice);
 
-    task->burst -= slice;
-    if (task->burst < 0)
+    slice = (task->_remaining_burst <= slice) ? task->_remaining_burst : slice;
+    task->_remaining_burst -= slice;
+    TIME += slice;
+
+    if (task->_response_time == -1)
     {
-        task->burst = 0;
+        task->_response_time = start_time;
     }
+    if (task->_remaining_burst == 0)
+    {
+        task->_completion_time = TIME;
+    }
+    task->_wait_time += start_time - task->_last_preempt_time;
+    task->_last_preempt_time = TIME;
 }

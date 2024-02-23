@@ -17,20 +17,20 @@ clean:
 	rm -rf priority
 	rm -rf priority_rr
 
-rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_rr.o
-	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o
+rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_rr.o
+	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
 
-sjf: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_sjf.o
-	$(CC) $(CFLAGS) -o sjf driver.o schedule_sjf.o list.o queue.o task.o CPU.o add.o tid_manager.o
+sjf: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_sjf.o
+	$(CC) $(CFLAGS) -o sjf driver.o schedule_sjf.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
 
-fcfs: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_fcfs.o
-	$(CC) $(CFLAGS) -o fcfs driver.o schedule_fcfs.o list.o queue.o task.o CPU.o add.o tid_manager.o
+fcfs: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_fcfs.o
+	$(CC) $(CFLAGS) -o fcfs driver.o schedule_fcfs.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
 
-priority: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_priority.o
-	$(CC) $(CFLAGS) -o priority driver.o schedule_priority.o list.o queue.o task.o CPU.o add.o tid_manager.o
+priority: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_priority.o
+	$(CC) $(CFLAGS) -o priority driver.o schedule_priority.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
 
-priority_rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o schedule_priority_rr.o
-	$(CC) $(CFLAGS) -o priority_rr driver.o schedule_priority_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o
+priority_rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_priority_rr.o
+	$(CC) $(CFLAGS) -o priority_rr driver.o schedule_priority_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
 
 schedule_rr.o: schedule_rr.c
 	$(CC) $(CFLAGS) -c schedule_rr.c
@@ -64,3 +64,6 @@ CPU.o: CPU.c cpu.h
 
 tid_manager.o: tid_manager.c tid_manager.h
 	$(CC) $(CFLAGS) -c tid_manager.c
+
+evaluate.o: evaluate.c evaluate.h
+	$(CC) $(CFLAGS) -c evaluate.c

@@ -1,18 +1,21 @@
 #include "cpu.h"
+#include "evaluate.h"
 #include "queue.h"
 #include "schedulers.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-// comparator: order tasks by priority ascending, tiebreak by tid (FIFO)
-int comp_tasks_prio_rr(const void *a, const void *b)
+// comparator: order nodes by task priority ascending, tiebreak by tid (FIFO)
+int comp_nodes_prio_rr(const void *a, const void *b)
 {
-    Task **a_task = (Task **)a;
-    Task **b_task = (Task **)b;
-    return (*a_task)->priority == (*b_task)->priority ? (*a_task)->tid - (*b_task)->tid : (*a_task)->priority - (*b_task)->priority;
+    Task *a_task = (*(struct node **)a)->task;
+    Task *b_task = (*(struct node **)b)->task;
+    return a_task->priority == b_task->priority ? a_task->tid - b_task->tid : a_task->priority - b_task->priority;
 }
 
+// run tasks in queue round robin until all bursts completed
+// queue will be empty, but queue/polled nodes are NOT destroyed
 void run_rr(Queue *q)
 {
     struct node *polled_node;
@@ -22,17 +25,13 @@ void run_rr(Queue *q)
     while ((polled_node = poll_queue(q)) != NULL)
     {
         polled_task = polled_node->task;
-        slice = polled_task->burst > QUANTUM ? QUANTUM : polled_task->burst;
+        slice = polled_task->_remaining_burst > QUANTUM ? QUANTUM : polled_task->_remaining_burst;
 
         run(polled_task, slice);
 
-        if (polled_task->burst > 0)
+        if (polled_task->_remaining_burst > 0)
         {
             push_queue(q, polled_node);
-        }
-        else
-        {
-            destroy_node(polled_node);
         }
     }
 }
@@ -41,17 +40,17 @@ void run_rr(Queue *q)
 void schedule()
 {
     int sz = TASK_QUEUE->sz;
-    Task **task_arr = drain_to_array(TASK_QUEUE);
+    struct node **node_arr = drain_to_array(TASK_QUEUE);
 
     // highest prio (lowest prio number) job first
-    qsort(task_arr, sz, sizeof(Task *), comp_tasks_prio_rr);
+    qsort(node_arr, sz, sizeof(struct node *), comp_nodes_prio_rr);
 
     int r = 0;
     while (r < sz)
     {
         int l = r;
-        int prio_class = task_arr[l]->priority;
-        while (r < sz && task_arr[r]->priority == prio_class)
+        int prio_class = node_arr[l]->task->priority;
+        while (r < sz && node_arr[r]->task->priority == prio_class)
         {
             r++;
         }
@@ -59,9 +58,7 @@ void schedule()
         Queue *prio_class_q = create_queue();
         for (int i = l; i < r; i++)
         {
-            Task *task = task_arr[i];
-            push_queue(prio_class_q, create_node(task->name, task->tid, task->priority, task->burst));
-            free(task); // do not free task name field still in use
+            push_queue(prio_class_q, node_arr[i]);
         }
 
         printf("[schedule] run %d tasks in priority class %d rr\n", prio_class_q->sz, prio_class);
@@ -69,6 +66,8 @@ void schedule()
         destroy_queue(prio_class_q);
     }
 
-    free(task_arr);
+    evaluate_and_report(node_arr, sz);
+
+    destroy_node_arr(node_arr, sz);
     destroy_queue(TASK_QUEUE);
 }

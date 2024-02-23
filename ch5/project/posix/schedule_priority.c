@@ -30,6 +30,6 @@ void schedule()
 
     evaluate_and_report(node_arr, sz);
 
-    destroy_node_arr(node_arr, sz);
+    destroy_node_array(node_arr, sz);
     destroy_queue(TASK_QUEUE);
 }

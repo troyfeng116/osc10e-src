@@ -1,6 +1,6 @@
-#include "cpu.h"
 #include "evaluate.h"
 #include "queue.h"
+#include "run_rr.h"
 #include "schedulers.h"
 
 #include <stdio.h>
@@ -12,28 +12,6 @@ int comp_nodes_prio_rr(const void *a, const void *b)
     Task *a_task = (*(struct node **)a)->task;
     Task *b_task = (*(struct node **)b)->task;
     return a_task->priority == b_task->priority ? a_task->tid - b_task->tid : a_task->priority - b_task->priority;
-}
-
-// run tasks in queue round robin until all bursts completed
-// queue will be empty, but queue/polled nodes are NOT destroyed
-void run_rr(Queue *q)
-{
-    struct node *polled_node;
-    Task *polled_task;
-    int slice;
-
-    while ((polled_node = poll_queue(q)) != NULL)
-    {
-        polled_task = polled_node->task;
-        slice = polled_task->_remaining_burst > QUANTUM ? QUANTUM : polled_task->_remaining_burst;
-
-        run(polled_task, slice);
-
-        if (polled_task->_remaining_burst > 0)
-        {
-            push_queue(q, polled_node);
-        }
-    }
 }
 
 // invoke the scheduler
@@ -68,6 +46,6 @@ void schedule()
 
     evaluate_and_report(node_arr, sz);
 
-    destroy_node_arr(node_arr, sz);
+    destroy_node_array(node_arr, sz);
     destroy_queue(TASK_QUEUE);
 }

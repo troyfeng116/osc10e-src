@@ -89,7 +89,7 @@ void print_queue(Queue *q)
     }
 }
 
-void destroy_node_arr(struct node **nodes, int n)
+void destroy_node_array(struct node **nodes, int n)
 {
     for (int i = 0; i < n; i++)
     {

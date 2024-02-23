@@ -17,8 +17,8 @@ clean:
 	rm -rf priority
 	rm -rf priority_rr
 
-rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_rr.o
-	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
+rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o run_rr.o evaluate.o schedule_rr.o
+	$(CC) $(CFLAGS) -o rr driver.o schedule_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o run_rr.o evaluate.o
 
 sjf: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_sjf.o
 	$(CC) $(CFLAGS) -o sjf driver.o schedule_sjf.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
@@ -29,8 +29,8 @@ fcfs: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedu
 priority: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_priority.o
 	$(CC) $(CFLAGS) -o priority driver.o schedule_priority.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
 
-priority_rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o schedule_priority_rr.o
-	$(CC) $(CFLAGS) -o priority_rr driver.o schedule_priority_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o evaluate.o
+priority_rr: driver.o list.o queue.o task.o CPU.o add.o tid_manager.o run_rr.o evaluate.o schedule_priority_rr.o
+	$(CC) $(CFLAGS) -o priority_rr driver.o schedule_priority_rr.o list.o queue.o task.o CPU.o add.o tid_manager.o run_rr.o evaluate.o
 
 schedule_rr.o: schedule_rr.c
 	$(CC) $(CFLAGS) -c schedule_rr.c
@@ -67,3 +67,6 @@ tid_manager.o: tid_manager.c tid_manager.h
 
 evaluate.o: evaluate.c evaluate.h
 	$(CC) $(CFLAGS) -c evaluate.c
+
+run_rr.o: run_rr.c run_rr.h
+	$(CC) $(CFLAGS) -c run_rr.c

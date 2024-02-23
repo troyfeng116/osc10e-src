@@ -6,6 +6,5 @@ static int tid = 1;
 
 int get_next_tid()
 {
-    // TODO: thread safety
-    return tid++;
+    return atomic_fetch_add(&tid, 1);
 }
